@@ -40,7 +40,7 @@ def _parse_data():
     return re.split(_REGEXES['pages'], data)
 
 
-def _parse_page(page, groups):
+def _parse_page(page, groups, students, group_ids):
     unis = []
     selections = []
     priorities = []
@@ -73,8 +73,13 @@ def _parse_page(page, groups):
         uni = unis[i]
         group_id = (selections[i], priorities[i], lottery_numbers[i])
 
+        students[uni] = group_id
+
         if group_id in groups:
             groups[group_id].append(uni)
 
         else:
             groups[group_id] = [uni]
+            group_ids.append(group_id)
+
+        assert len(group_ids) == len(groups)
