@@ -8,18 +8,28 @@ from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
 from pdfminer.pdfpage import PDFPage, PDFTextExtractionNotAllowed
 from pdfminer.pdfparser import PDFParser
 
+from data import HOUSING_PDF
+
 _REGEXES = {'pages': r'Page \d+ of \d+',
             'page': r'\n+',
-            'uni': r'([a-z]+\d+|WITHHELD)',
+            'uni': r'([a-zA-Z]+\d+|WITHHELD)',
             'priority': '[1-3]\d\.\d{4}',
             'lottery_number': '\d+'
             }
-_HOUSING_PDF = 'AY_1617_Lottery_numbers_by_Priority.pdf'
+_MAX_GROUP_SIZE = 8
+
+
+class Housing:
+    def __init__(self):
+        self.groups = {}
+        self.students = {}
+        self.group_ids = []
+        self.groups_by_size = []
 
 
 def _parse_data():
     data = ''
-    housing_parser = PDFParser(open(_HOUSING_PDF, 'rb'))
+    housing_parser = PDFParser(open(HOUSING_PDF, 'rb'))
     housing_document = PDFDocument(housing_parser)
 
     if not housing_document.is_extractable:
@@ -40,7 +50,7 @@ def _parse_data():
     return re.split(_REGEXES['pages'], data)
 
 
-def _parse_page(page, groups, students, group_ids):
+def _parse_page(page, housing_data):
     unis = []
     selections = []
     priorities = []
@@ -66,20 +76,47 @@ def _parse_page(page, groups, students, group_ids):
             lottery_numbers.append(entry)
 
     assert len(unis) == len(selections) \
-        == len(priorities) == len(lottery_numbers)
+        == len(priorities) == len(lottery_numbers), \
+        (unis, selections, priorities, lottery_numbers)
 
     page_entries = len(unis)
     for i in xrange(page_entries):
         uni = unis[i]
         group_id = (selections[i], priorities[i], lottery_numbers[i])
+        _add_student(uni, group_id, housing_data)
 
-        students[uni] = group_id
 
-        if group_id in groups:
-            groups[group_id].append(uni)
+def _add_student(uni, group_id, housing_data):
+    housing_data.students[uni] = group_id
 
-        else:
-            groups[group_id] = [uni]
-            group_ids.append(group_id)
+    if group_id in housing_data.groups:
+        housing_data.groups[group_id].append(uni)
 
-        assert len(group_ids) == len(groups)
+    else:
+        housing_data.groups[group_id] = [uni]
+        housing_data.group_ids.append(group_id)
+
+    assert len(housing_data.group_ids) == len(housing_data.groups), \
+        (housing_data.group_ids, housing_data.groups)
+
+
+def _split_groups_by_size(housing_data):
+    groups_by_size = [[] for _ in xrange(_MAX_GROUP_SIZE)]
+
+    for group_id in housing_data.group_ids:
+        group_size = len(housing_data.groups[group_id])
+        groups_by_size[group_size - 1].append(group_id)
+
+    housing_data.groups_by_size = groups_by_size
+
+
+def get_data():
+    housing_data = Housing()
+    pages = _parse_data()
+
+    for page in pages:
+        _parse_page(page, housing_data)
+
+    _split_groups_by_size(housing_data)
+
+    return housing_data
