@@ -1,7 +1,7 @@
 *.ipynb
 *.pyc
-*.pdf
+
 .idea/
 .ipynb_checkpoints/
 __pycache__/
-data.py
+data/

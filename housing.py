@@ -13,9 +13,9 @@ from data import HOUSING_PDF
 _REGEXES = {'pages': r'Page \d+ of \d+',
             'page': r'\n+',
             'uni': r'([a-zA-Z]+\d+|WITHHELD)',
-            'priority': '[1-3]\d\.\d{4}',
-            'lottery_number': '\d+'
-            }
+            'priority': r'[1-3]\d\.\d{4}',
+            'lottery_number': r'\d+'}
+_SELECTION_TYPES = {'In-Person', 'Online'}
 _MAX_GROUP_SIZE = 8
 
 
@@ -29,7 +29,8 @@ class Housing:
 
 def _parse_data():
     data = ''
-    housing_parser = PDFParser(open(HOUSING_PDF, 'rb'))
+    housing_fb = open(HOUSING_PDF, 'rb')
+    housing_parser = PDFParser(housing_fb)
     housing_document = PDFDocument(housing_parser)
 
     if not housing_document.is_extractable:
@@ -47,6 +48,7 @@ def _parse_data():
         interpreter.process_page(page)
         data = string_buffer.getvalue()
 
+    housing_fb.close()
     return re.split(_REGEXES['pages'], data)
 
 
@@ -62,7 +64,7 @@ def _parse_page(page, housing_data):
             unis.append(entry)
 
         # next check if entry is a valid selection type
-        elif entry == 'In-Person' or entry == 'Online':
+        elif entry in _SELECTION_TYPES:
             selections.append(entry)
 
         # next check if entry is a valid priority number
