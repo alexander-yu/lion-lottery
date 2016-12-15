@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block head %}
+    {{ super() }}
+{% endblock %}
+
+{% block body %}
+    {% for group_size in housing_data.groups_by_size %}
+        <p>
+            {{ group_size }}
+        </p>
+    {% endfor %}
+{% endblock %}
