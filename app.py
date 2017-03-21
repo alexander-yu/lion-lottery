@@ -1,16 +1,13 @@
+import cPickle as pickle
+
 from flask import Flask, render_template
-import simplejson as json
+
+from housing import Housing, Group, GroupID, Student  # noqa: F401
+
 
 app = Flask(__name__)
-try:
-    with open("./data/housing_data.json", 'r') as housing_data_json:
-        housing_data = json.loads(housing_data_json.read())
-
-except IOError as e:
-    print "Exception encountered."
-    print "If ./data/housing_data.json does not exist, " + \
-        "please run python ./housing.py"
-    raise e
+with open("./data/housing_data.pkl", 'rb') as housing_data_f:
+    housing_data = pickle.load(housing_data_f)
 
 
 @app.route('/')
