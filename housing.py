@@ -1,4 +1,5 @@
 import cPickle as pickle
+import os
 import re
 
 from collections import namedtuple
@@ -11,7 +12,9 @@ from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
 from pdfminer.pdfpage import PDFPage, PDFTextExtractionNotAllowed
 from pdfminer.pdfparser import PDFParser
 
-from data import HOUSING_PDF
+import data
+HOUSING_PDF = data.HOUSING_PDF
+DATA_DIR = os.path.dirname(data.__file__) + '/'
 
 IN_PERSON_SELECTION = 'In-Person'
 ONLINE_SELECTION = 'Online'
@@ -157,6 +160,6 @@ class Housing:
 
 
 if __name__ == "__main__":
-    with open('./data/housing_data.pkl', 'wb') as housing_data_f:
+    with open(DATA_DIR + 'housing_data.pkl', 'wb') as housing_data_f:
         housing_data = Housing(HOUSING_PDF)
         pickle.dump(housing_data, housing_data_f, pickle.HIGHEST_PROTOCOL)
