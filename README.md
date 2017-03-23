@@ -7,7 +7,7 @@ A simple app to display the lottery numbers for Columbia University's housing lo
 3. Create the file `__init__.py` with the following content:
 
     ```python
-    HOUSING_PDF = '[File name of housing lottery pdf]'
+    HOUSING_PDF = '[Path to housing lottery pdf]'
     ```
     and place it in `data`.
 4. Run the command `python housing.py`.

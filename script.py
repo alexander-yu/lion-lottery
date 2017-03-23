@@ -2,11 +2,6 @@ import cPickle as pickle
 
 from argparse import ArgumentParser
 
-from housing import Housing, Group, GroupID, Student  # noqa: F401
-
-with open("./data/housing_data.pkl", 'rb') as housing_data_f:
-    housing_data = pickle.load(housing_data_f)
-
 
 def get_parser():
     """ Returns argument parser. """
@@ -20,6 +15,13 @@ def get_parser():
         type=int,
         help="Option to retrieve list of housing groups by a specified size."
     )
+    parser.add_argument(
+        "-o",
+        "--old",
+        action="store_true",
+        default=False,
+        help="Flag to get old stats from previous year"
+    )
 
     return parser
 
@@ -27,9 +29,19 @@ def get_parser():
 if __name__ == "__main__":
     args = get_parser().parse_args()
     if args.size is not None:
+        if args.old:
+            from housing import Housing, Group, GroupID, Student  # noqa: F401
+            with open("./data/old_housing_data.pkl", 'rb') as housing_data_f:
+                housing_data = pickle.load(housing_data_f)
+
+        else:
+            from housing_17 import Housing, Group, GroupID, Student  # noqa: F401
+            with open("./data/housing_data.pkl", 'rb') as housing_data_f:
+                housing_data = pickle.load(housing_data_f)
+
         groups = housing_data.groups_by_size[args.size - 1]
         for i in range(len(groups)):
             group = groups[i]
-            print("{:<5d}{:<11s}{:2.4f}  {:d}") \
-                .format(i + 1, group.selection, group.priority,
+            print("{:<5d}{:2.4f}  {:d}") \
+                .format(i + 1, group.priority,
                         group.lottery_number)

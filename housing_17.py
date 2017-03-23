@@ -13,20 +13,15 @@ from pdfminer.pdfpage import PDFPage, PDFTextExtractionNotAllowed
 from pdfminer.pdfparser import PDFParser
 
 import data
-HOUSING_PDF = data.OLD_HOUSING_PDF
+HOUSING_PDF = data.HOUSING_PDF
 DATA_DIR = os.path.dirname(data.__file__) + '/'
-
-IN_PERSON_SELECTION = 'In-Person'
-ONLINE_SELECTION = 'Online'
 
 REGEXES = {
     'pages': r'Page \d+ of \d+',
     'page': r'\n+',
-    'uni': r'([a-zA-Z]+\d+|WITHHELD)',
-    'priority': r'[1-3]\d\.\d{4}',
-    'lottery_number': r'\d+'
+    'uni': r'([a-zA-Z]+\d+|WITHDREW)',
+    'number': r'\d+'
 }
-SELECTION_TYPES = {IN_PERSON_SELECTION, ONLINE_SELECTION}
 MAX_GROUP_SIZE = 8
 PDF_CODEC = 'utf-8'
 LAYOUT_ANALYSIS_PARAMS = LAParams()
@@ -35,15 +30,8 @@ Student = namedtuple('Student', ['uni', 'group_id'])
 
 
 class GroupID(namedtuple('GroupID',
-                         ['selection', 'priority', 'lottery_number'])):
+                         ['appointment_time', 'priority', 'lottery_number'])):
     def __lt__(self, other):
-        if self.selection == ONLINE_SELECTION and \
-                other.selection == IN_PERSON_SELECTION:
-            return False
-        elif self.selection == IN_PERSON_SELECTION and \
-                other.selection == ONLINE_SELECTION:
-            return True
-
         if self.priority < other.priority:
             return False
         elif self.priority > other.priority:
@@ -112,36 +100,30 @@ class Housing:
 
     def _parse_page(self, page):
         unis = []
-        selections = []
         priorities = []
         lottery_numbers = []
 
-        for entry in re.split(REGEXES['page'], page):
+        entries = re.split(REGEXES['page'], page)
+        split_index = None
+
+        for i in range(len(entries)):
+            entry = entries[i]
             # first check if entry is a valid UNI
             if re.match(REGEXES['uni'], entry):
                 unis.append(entry)
-            # next check if entry is a valid selection type
-            elif entry in SELECTION_TYPES:
-                selections.append(entry)
-            # next check if entry is a valid priority number
-            elif re.match(REGEXES['priority'], entry):
-                priorities.append(float(entry))
-            # finally check if entry is valid lottery number
-            # this check if performed only after the priority number
-            # check; otherwise a priority number would match the regex
-            elif re.match(REGEXES['lottery_number'], entry):
-                lottery_numbers.append(int(entry))
+            elif re.match(REGEXES['number'], entry) and split_index is None:
+                split_index = i - 1
 
-        assert len(unis) == len(selections) \
-            == len(priorities) == len(lottery_numbers), \
-            (unis, selections, priorities, lottery_numbers)
+        if split_index is not None:
+            priorities = entries[split_index + 1:split_index + 1 + len(unis)]
+            appointment_times = entries[split_index + 1 + 2 * len(unis):split_index + 1 + 3 * len(unis)]
+            lottery_numbers = entries[split_index + 1 + 3 * len(unis):split_index + 1 + 4 * len(unis)]
 
-        page_entries = len(unis)
-        for i in xrange(page_entries):
-            group_id = GroupID(selections[i],
-                               priorities[i],
-                               lottery_numbers[i])
-            self._add_student(unis[i], group_id)
+            for i in range(len(unis)):
+                group_id = GroupID(appointment_times[i],
+                                   float(priorities[i]),
+                                   int(lottery_numbers[i]))
+                self._add_student(unis[i], group_id)
 
     def _add_student(self, uni, group_id):
         student = Student(uni, group_id)
@@ -160,6 +142,6 @@ class Housing:
 
 
 if __name__ == "__main__":
-    with open(DATA_DIR + 'old_housing_data.pkl', 'wb') as housing_data_f:
+    with open(DATA_DIR + 'housing_data.pkl', 'wb') as housing_data_f:
         housing_data = Housing(HOUSING_PDF)
         pickle.dump(housing_data, housing_data_f, pickle.HIGHEST_PROTOCOL)
